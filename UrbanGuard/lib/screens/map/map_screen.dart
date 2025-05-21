@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:math';
 import '../../routes/app_routes.dart';
+import 'callao_polygon.dart';
 
 /// Pantalla principal del mapa, integra Google Maps y todas las funciones de seguridad.
 class MapScreen extends StatefulWidget {
@@ -52,7 +53,7 @@ class _MapScreenState extends State<MapScreen> {
   Set<Polyline> _mapPolylines = {};
 
   // API Key de Google Maps
-  String apiKey = 'AIzaSyB_3EBYHGHD5DkoCTlS38BIf4Qqy-qWzCc';
+  String apiKey = 'AIzaSyCdjMMG__X2Y2lm16pXWbMVSBEFCeQXV9g';
 
   // Instancia de Location para obtener la ubicación del usuario
   location_pkg.Location location = location_pkg.Location();
@@ -376,7 +377,7 @@ class _MapScreenState extends State<MapScreen> {
 
   /// Verifica si la ubicación actual está cerca de alguna zona de riesgo y actualiza el estado.
   void _checkProximityToRiskZones() {
-    if (currentLocation == null || !isInCallao) {
+    if (currentLocation == null) {
       if (zonaDeRiesgo != null) {
         setState(() {
           zonaDeRiesgo = null;
@@ -1013,7 +1014,29 @@ class _MapScreenState extends State<MapScreen> {
                   child: ElevatedButton(
                     onPressed: () async {
                       if (currentLocation != null && selectedDestination != null) {
-                        _getRoute(currentLocation!, selectedDestination!);
+                        if (!isPointInCallao(selectedDestination!)) {
+                          // Muestra advertencia, pero igual traza la ruta general
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: Text('Advertencia'),
+                              content: Text('El destino está fuera del Callao. Por falta de información, fuera de esta zona no se detecterá una ruta segura'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                    // Traza la ruta general al cerrar el mensaje
+                                    _getRoute(currentLocation!, selectedDestination!);
+                                  },
+                                  child: Text('Entendido'),
+                                ),
+                              ],
+                            ),
+                          );
+                        } else {
+                          // Destino dentro del Callao: intenta ambas rutas
+                          _getRoute(currentLocation!, selectedDestination!);
+                        }
                       }
                     },
                     child: Text("Obtener ruta"),
